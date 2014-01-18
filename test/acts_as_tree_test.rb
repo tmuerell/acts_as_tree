@@ -1,9 +1,9 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'minitest/benchmark'
 require 'active_record'
 require 'acts_as_tree'
 
-class Test::Unit::TestCase
+class MiniTest::Unit::TestCase
   def assert_queries(num = 1)
     $query_count = 0
     yield
@@ -63,7 +63,7 @@ class RecursivelyCascadedTreeMixin < Mixin
   has_one :first_child, class_name: 'RecursivelyCascadedTreeMixin', foreign_key: :parent_id
 end
 
-class TreeTest < Test::Unit::TestCase
+class TreeTest < MiniTest::Unit::TestCase
 
   def setup
     setup_db
@@ -233,7 +233,7 @@ class TreeTest < Test::Unit::TestCase
   end
 end
 
-class TestDeepDescendantsPerformance < Test::Unit::TestCase
+class TestDeepDescendantsPerformance < MiniTest::Unit::TestCase
   def setup
     teardown_db
     setup_db
@@ -261,7 +261,7 @@ class TestDeepDescendantsPerformance < Test::Unit::TestCase
     [1, 2, 3, 4, 5]
   end
 
-  def test_descendants_linear_performance
+  def bench_descendants
     # There is an issue in Travis CI that slows down this test. Maybe we're
     # hitting a memory limit?
     accuracy = ENV.fetch('TRAVIS', false) ? 0.90 : 0.95
@@ -285,7 +285,7 @@ class TestDeepDescendantsPerformance < Test::Unit::TestCase
   end
 end
 
-class TreeTestWithEagerLoading < Test::Unit::TestCase
+class TreeTestWithEagerLoading < MiniTest::Unit::TestCase
 
   def setup
     teardown_db
@@ -346,7 +346,7 @@ class TreeTestWithEagerLoading < Test::Unit::TestCase
   end
 end
 
-class TreeTestWithoutOrder < Test::Unit::TestCase
+class TreeTestWithoutOrder < MiniTest::Unit::TestCase
 
   def setup
     setup_db
@@ -367,7 +367,7 @@ class TreeTestWithoutOrder < Test::Unit::TestCase
   end
 end
 
-class UnsavedTreeTest < Test::Unit::TestCase
+class UnsavedTreeTest < MiniTest::Unit::TestCase
   def setup
     setup_db
     @root       = TreeMixin.new
@@ -385,7 +385,7 @@ class UnsavedTreeTest < Test::Unit::TestCase
 end
 
 
-class TreeTestWithCounterCache < Test::Unit::TestCase
+class TreeTestWithCounterCache < MiniTest::Unit::TestCase
   def setup
     teardown_db
     setup_db
