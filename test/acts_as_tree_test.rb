@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'minitest/benchmark'
 require 'active_record'
 require 'acts_as_tree'
 
@@ -230,7 +231,55 @@ class TreeTest < Test::Unit::TestCase
     TreeMixin.tree_view(:id)
     assert_equal tree_view_outputs, $stdout.string
   end
+end
 
+class TestDeepDescendantsPerformance < Test::Unit::TestCase
+  def setup
+    teardown_db
+    setup_db
+    @root1 = TreeMixin.create!
+    create_cascade_children @root1, "root1", 10
+
+    @root2        = TreeMixin.create!
+    create_cascade_children @root2, "root2", 20
+
+    @root3        = TreeMixin.create!
+    create_cascade_children @root3, "root3", 30
+
+    @root4        = TreeMixin.create!
+    create_cascade_children @root4, "root4", 40
+
+    @root5        = TreeMixin.create!
+    create_cascade_children @root5, "root5", 50
+  end
+
+  def teardown
+    teardown_db
+  end
+
+  def self.bench_range
+    [1, 2, 3, 4, 5]
+  end
+
+  def test_descendants_linear_performance
+    assert_performance_linear 0.95 do |x|
+      obj = instance_variable_get "@root#{x}"
+      obj.descendants
+    end
+  end
+
+  def create_cascade_children parent, parent_name, count
+    first_child_name = "@#{parent_name}_child1"
+    first_record = TreeMixin.create! parent_id: parent.id
+    instance_variable_set first_child_name, first_record
+
+    (2...count).each do |child_count|
+      name       = "@#{parent_name}_child#{child_count}"
+      prev       = instance_variable_get "@#{parent_name}_child#{child_count - 1}"
+      new_record = TreeMixin.create! parent_id: prev.id
+      instance_variable_set name, new_record
+    end
+  end
 end
 
 class TreeTestWithEagerLoading < Test::Unit::TestCase
