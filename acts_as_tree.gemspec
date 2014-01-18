@@ -22,5 +22,5 @@ Gem::Specification.new do |s|
   # Dependencies (installed via 'bundle install')...
   s.add_development_dependency "sqlite3"
   s.add_development_dependency "rdoc"
-  s.add_development_dependency "minitest", "~> 4.7.5"
+  s.add_development_dependency "minitest", "~> 5.2"
 end
