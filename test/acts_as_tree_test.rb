@@ -3,7 +3,7 @@ require 'minitest/benchmark'
 require 'active_record'
 require 'acts_as_tree'
 
-module ActsAsTreeAsserts
+class MiniTest::Unit::TestCase
   def assert_queries(num = 1)
     $query_count = 0
     yield
@@ -19,10 +19,10 @@ end
 ActiveRecord::Base.establish_connection adapter: "sqlite3", database: ":memory:"
 
 # AR keeps printing annoying schema statements
+$stdout = StringIO.new
 
 def setup_db
-  orig_stdout = $stdout.dup
-  $stdout = StringIO.new
+  ActiveRecord::Base.logger
   ActiveRecord::Schema.define(version: 1) do
     create_table :mixins do |t|
       t.column :type, :string
@@ -30,7 +30,6 @@ def setup_db
       t.column :children_count, :integer, default: 0
     end
   end
-  $stdout = orig_stdout.dup
 end
 
 def teardown_db
@@ -64,7 +63,7 @@ class RecursivelyCascadedTreeMixin < Mixin
   has_one :first_child, class_name: 'RecursivelyCascadedTreeMixin', foreign_key: :parent_id
 end
 
-class TreeTest < Minitest::Test
+class TreeTest < MiniTest::Unit::TestCase
 
   def setup
     setup_db
@@ -214,7 +213,6 @@ class TreeTest < Minitest::Test
   end
 
   def test_tree_view
-    $stdout = StringIO.new
     assert_equal false, Mixin.respond_to?(:tree_view)
     Mixin.extend ActsAsTree::Presentation
     assert_equal true,  TreeMixin.respond_to?(:tree_view)
@@ -235,7 +233,7 @@ class TreeTest < Minitest::Test
   end
 end
 
-class TestDeepDescendantsPerformance < Minitest::Benchmark
+class TestDeepDescendantsPerformance < MiniTest::Unit::TestCase
   def setup
     teardown_db
     setup_db
@@ -264,24 +262,27 @@ class TestDeepDescendantsPerformance < Minitest::Benchmark
   end
 
   def bench_descendants
-    assert_performance_linear 0.95 do |x|
+    assert_performance_linear 0.99 do |x|
       obj = instance_variable_get "@root#{x}"
       obj.descendants
     end
   end
 
   def create_cascade_children parent, parent_name, count
-    next_parent_record = TreeMixin.create!(parent_id: parent.id)
+    first_child_name = "@#{parent_name}_child1"
+    first_record = TreeMixin.create! parent_id: parent.id
+    instance_variable_set first_child_name, first_record
 
     (2...count).each do |child_count|
-      new_record = TreeMixin.create!(parent_id: next_parent_record.id)
-      next_parent_record = new_record
+      name       = "@#{parent_name}_child#{child_count}"
+      prev       = instance_variable_get "@#{parent_name}_child#{child_count - 1}"
+      new_record = TreeMixin.create! parent_id: prev.id
+      instance_variable_set name, new_record
     end
   end
 end
 
-class TreeTestWithEagerLoading < Minitest::Test
-  include ActsAsTreeAsserts
+class TreeTestWithEagerLoading < MiniTest::Unit::TestCase
 
   def setup
     teardown_db
@@ -342,7 +343,7 @@ class TreeTestWithEagerLoading < Minitest::Test
   end
 end
 
-class TreeTestWithoutOrder < Minitest::Test
+class TreeTestWithoutOrder < MiniTest::Unit::TestCase
 
   def setup
     setup_db
@@ -363,7 +364,7 @@ class TreeTestWithoutOrder < Minitest::Test
   end
 end
 
-class UnsavedTreeTest < Minitest::Test
+class UnsavedTreeTest < MiniTest::Unit::TestCase
   def setup
     setup_db
     @root       = TreeMixin.new
@@ -381,7 +382,7 @@ class UnsavedTreeTest < Minitest::Test
 end
 
 
-class TreeTestWithCounterCache < Minitest::Test
+class TreeTestWithCounterCache < MiniTest::Unit::TestCase
   def setup
     teardown_db
     setup_db
